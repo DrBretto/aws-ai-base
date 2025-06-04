@@ -1,0 +1,23 @@
+# Python
+__pycache__
+*.env
+
+# Ignore directory for prompt files
+/ignore
+
+# Terraform
+/.terraform/
+*.tfstate
+*.tfstate.*
+
+# Build artifacts and temporary files
+*.zip
+/requests_layer/python/
+/src/tiingo_scraper_lambda/vendor/ # Ignore locally installed dependencies within the Lambda source
+/.serverless/
+scraper_default_output.json
+scraper_output.json
+scraper_output_latest.json
+
+# AWS SAM
+# .aws-sam/ # .serverless/ covers SAM build artifacts in this project structure
