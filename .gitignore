@@ -19,5 +19,4 @@ scraper_default_output.json
 scraper_output.json
 scraper_output_latest.json
 
-# AWS SAM
-# .aws-sam/ # .serverless/ covers SAM build artifacts in this project structure
+
