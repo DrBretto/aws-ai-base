@@ -18,5 +18,10 @@
         "titleBar.inactiveBackground": "#222d4799",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#222d47"
+    "peacock.color": "#222d47",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportMissingTypeStubs": "none",
+        "reportMissingModuleSource": "none"
+      }
 }
