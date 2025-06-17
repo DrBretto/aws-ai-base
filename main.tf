@@ -199,3 +199,75 @@ resource "aws_lambda_permission" "allow_eventbridge_to_invoke_backfill_orchestra
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.hourly_backfill_orchestrator_schedule.arn
 }
+# GDELT Scraper ECR Repository
+resource "aws_ecr_repository" "gdelt_scraper_repo" {
+  name = "gdelt-scraper"
+}
+
+# GDELT Backfill Orchestrator ECR Repository
+resource "aws_ecr_repository" "gdelt_backfill_orchestrator_repo" {
+  name = "gdelt-backfill-orchestrator"
+}
+
+# GDELT Scraper Lambda Function (Docker image)
+resource "aws_lambda_function" "gdelt_scraper_lambda" {
+  function_name = "gdelt-scraper"
+  package_type  = "Image"
+  image_uri     = var.gdelt_scraper_image_uri
+
+  role    = aws_iam_role.lambda_exec_role.arn
+  timeout = 900
+  memory_size = 256
+
+  environment {
+    variables = {
+      S3_BUCKET_NAME = data.aws_s3_bucket.tiingo_data_bucket.bucket
+    }
+  }
+}
+
+# GDELT Backfill Orchestrator Lambda Function (Docker image)
+resource "aws_lambda_function" "gdelt_backfill_orchestrator_lambda" {
+  function_name = "gdelt-backfill-orchestrator"
+  package_type  = "Image"
+  image_uri     = var.gdelt_backfill_orchestrator_image_uri
+
+  role    = aws_iam_role.lambda_exec_role.arn
+  timeout = 900
+  memory_size = 128
+
+  environment {
+    variables = {
+      SCRAPER_LAMBDA_NAME = aws_lambda_function.gdelt_scraper_lambda.function_name
+      S3_BUCKET_NAME      = data.aws_s3_bucket.tiingo_data_bucket.bucket
+      BACKFILL_STATE_KEY  = "GDELT/backfill_state.json"
+    }
+  }
+}
+
+# EventBridge Rule for 15-min trigger for GDELT scraper
+resource "aws_cloudwatch_event_rule" "gdelt_scraper_15min_schedule" {
+  name                = "gdelt-scraper-15min-schedule"
+  description         = "Triggers the GDELT scraper Lambda every 15 minutes"
+  schedule_expression = "cron(0/15 * * * ? *)"
+  tags = {
+    ManagedBy = "Terraform"
+  }
+}
+
+# EventBridge Target to invoke the GDELT scraper Lambda every 15 min
+resource "aws_cloudwatch_event_target" "gdelt_scraper_15min_target" {
+  rule      = aws_cloudwatch_event_rule.gdelt_scraper_15min_schedule.name
+  target_id = "InvokeGdeltScraperLambda15min"
+  arn       = aws_lambda_function.gdelt_scraper_lambda.arn
+  input     = jsonencode({})
+}
+
+# Lambda Permission for EventBridge to invoke the GDELT scraper Lambda every 15 min
+resource "aws_lambda_permission" "allow_eventbridge_to_invoke_gdelt_scraper_15min" {
+  statement_id  = "AllowExecutionFromEventBridgeGdelt15min"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.gdelt_scraper_lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.gdelt_scraper_15min_schedule.arn
+}
